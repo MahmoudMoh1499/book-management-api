@@ -1,102 +1,84 @@
 import { Request, RequestHandler, Response } from 'express';
-import { AppDataSource } from '../data-source'; 
+import { AppDataSource } from '../data-source';
 import { Book } from '../entities/Book';
+
+const handleError = (res: Response, message: string, error: Error, statusCode: number = 500): void => {
+    const errorMessage = error.message || 'Unknown error';
+    res.status(statusCode).json({ message, error: errorMessage });
+};
+
+const validateBookId = (id: string, res: Response): number | null => {
+    const bookId = Number(id);
+    if (isNaN(bookId)) {
+        res.status(400).json({ message: 'Invalid book ID' });
+        return null;
+    }
+    return bookId;
+};
+
+const getBookRepository = () => AppDataSource.getRepository(Book);
 
 export const addBook: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
         const { title, author, publishedDate, numberOfPages } = req.body;
+        const bookRepository = getBookRepository();
 
-        const bookRepository = AppDataSource.getRepository(Book);
-        const newBook = bookRepository.create({
-            title,
-            author,
-            publishedDate,
-            numberOfPages,
-        });
-
+        const newBook = bookRepository.create({ title, author, publishedDate, numberOfPages });
         const savedBook = await bookRepository.save(newBook);
 
         res.status(201).json(savedBook);
-    } catch (error) {
-        const errorMessage = (error as Error).message;
-        res.status(500).json({ message: 'Error adding book', error: errorMessage });
+    } catch (error: any) {
+        handleError(res, 'Error adding book', error);
     }
-
 };
-
-// Add this function in your controller
 
 export const getAllBooks: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-        const bookRepository = AppDataSource.getRepository(Book);
-
-        // Retrieve all books from the database
+        const bookRepository = getBookRepository();
         const books = await bookRepository.find();
-
-        res.status(200).json(books);  // Return the list of books
-    } catch (error) {
-        const errorMessage = (error as Error).message;
-        res.status(500).json({ message: 'Error retrieving books', error: errorMessage });
+        res.status(200).json(books);
+    } catch (error: any) {
+        handleError(res, 'Error retrieving books', error);
     }
 };
 
-// Add this function in your controller
-
 export const getBookById: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { id } = req.params;  // Extract the ID from the request params
+        const { id } = req.params;
+        const bookId = validateBookId(id, res);
+        if (bookId === null) return;
 
-        // Convert the id to a number
-        const bookId = Number(id);
 
-        if (isNaN(bookId)) {
-            res.status(400).json({ message: 'Invalid book ID' });
-            return;
-        }
-
-        const bookRepository = AppDataSource.getRepository(Book);
-
-        const book = await bookRepository.findOne({
-            where: { id: bookId },
-        });
+        const bookRepository = getBookRepository();
+        const book = await bookRepository.findOne({ where: { id: bookId } });
 
         if (!book) {
             res.status(404).json({ message: `Book with id ${id} not found` });
         } else {
-            res.status(200).json(book);  // Return the book details
+            res.status(200).json(book);
         }
-    } catch (error) {
-        const errorMessage = (error as Error).message;
-        res.status(500).json({ message: 'Error retrieving book', error: errorMessage });
+    } catch (error: any) {
+        handleError(res, 'Error retrieving book', error);
     }
 };
 
-
-// Update a Book's Details
 export const updateBook: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { title, author, publishedDate, numberOfPages } = req.body;
 
     try {
-        const bookRepository = AppDataSource.getRepository(Book);
-        // Convert the id to a number
-        const bookId = Number(id);
+        const bookId = validateBookId(id, res);
+        if (bookId === null) return;
 
-        if (isNaN(bookId)) {
-            res.status(400).json({ message: 'Invalid book ID' });
-            return;
-        }
 
-        const book = await bookRepository.findOne({
-            where: { id: bookId },
-        });
+        const bookRepository = getBookRepository();
+        const book = await bookRepository.findOne({ where: { id: bookId } });
 
         if (!book) {
             res.status(404).json({ message: 'Book not found' });
             return;
         }
 
-        // Update book properties
         book.title = title || book.title;
         book.author = author || book.author;
         book.publishedDate = publishedDate || book.publishedDate;
@@ -104,31 +86,20 @@ export const updateBook: RequestHandler = async (req: Request, res: Response): P
 
         const updatedBook = await bookRepository.save(book);
         res.status(200).json(updatedBook);
-    } catch (error) {
-        const errorMessage = (error as Error).message;
-        res.status(500).json({ message: 'Error updating book', error: errorMessage });
+    } catch (error: any) {
+        handleError(res, 'Error updating book', error);
     }
 };
 
-// Delete a Book
 export const deleteBook: RequestHandler = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
 
     try {
-        // Convert the id to a number
-        const bookId = Number(id);
+        const bookId = validateBookId(id, res);
+        if (bookId === null) return;
 
-        if (isNaN(bookId)) {
-            res.status(400).json({ message: 'Invalid book ID' });
-            return;
-        }
-
-        const bookRepository = AppDataSource.getRepository(Book);
-
-        const book = await bookRepository.findOne({
-            where: { id: bookId },
-        });
-
+        const bookRepository = getBookRepository();
+        const book = await bookRepository.findOne({ where: { id: bookId } });
 
         if (!book) {
             res.status(404).json({ message: 'Book not found' });
@@ -137,8 +108,7 @@ export const deleteBook: RequestHandler = async (req: Request, res: Response): P
 
         await bookRepository.remove(book);
         res.status(200).json({ message: 'Book successfully deleted' });
-    } catch (error) {
-        const errorMessage = (error as Error).message;
-        res.status(500).json({ message: 'Error deleting book', error: errorMessage });
+    } catch (error:any) {
+        handleError(res, 'Error deleting book', error);
     }
 };
