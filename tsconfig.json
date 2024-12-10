@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "target": "ES6", // Compile to ECMAScript 6
+        "module": "CommonJS", // Use CommonJS for module system (Node.js)
+        "strict": true, // Enable strict type-checking options
+        "esModuleInterop": true, // Allow default imports from modules with no default export
+        "skipLibCheck": true, // Skip type checking of declaration files
+        "forceConsistentCasingInFileNames": true, // Ensure that casing is consistent
+        "outDir": "./dist", // Output directory for compiled JavaScript
+        "baseUrl": "./src", // Set the base directory for module resolution
+        "types": ["node"], // Include Node.js types
+        "experimentalDecorators": true, // Required for TypeORM
+        "emitDecoratorMetadata": true, // Required for TypeORM
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "paths": {
+            "*": [
+                "node_modules/*",
+                "src/types/*"
+            ] // Allow custom paths to resolve
+        }
+        
+    },
+    "include": [
+        "src/**/*.ts" // Include all files in the `src` folder
+    ],
+    "exclude": [
+        "node_modules", // Exclude `node_modules` from being compiled
+        "dist" // Exclude `dist` folder to avoid compiling output files
+    ]
+}
